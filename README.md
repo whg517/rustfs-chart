@@ -45,7 +45,7 @@ The following table lists the configurable parameters of the RustFS chart and th
 |-----------|-------------|---------|
 | `replicas` | Number of StatefulSet replicas | `1` |
 | `image.repository` | RustFS image repository | `rustfs/rustfs` |
-| `image.tag` | RustFS image tag | `latest` |
+| `image.tag` | RustFS image tag (defaults to appVersion) | `""` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `nameOverride` | Override the name of the chart | `""` |
 | `fullnameOverride` | Override the full name of the chart | `""` |
@@ -321,15 +321,6 @@ Test configuration without deployment:
 ```bash
 helm template my-rustfs ./rustfs --debug
 ```
-
-## Migration from v0.1.0
-
-If upgrading from version 0.1.0, note these breaking changes:
-
-1. Service configuration has changed - separate API and console services
-2. Persistence configuration moved from `rustfs.persistence` to `persistence`
-3. New credential management with `rootUser`/`rootPassword`
-4. Multi-drive support requires configuration review
 
 ## Support
 

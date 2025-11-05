@@ -17,8 +17,8 @@ image:
   # Image pull policy: Always, IfNotPresent, or Never
   pullPolicy: IfNotPresent
   # Image tag to use (overrides the chart appVersion)
-  # Use specific version tags in production instead of "latest"
-  tag: "latest"
+  # Defaults to chart appVersion if not specified
+  # tag: "1.0.0-alpha.67"
 
 # Secrets for pulling images from private repositories
 # More information: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
