@@ -51,13 +51,14 @@ jobs:
         run: |
           ct lint --all
 
-      - name: Install ArtifactHub CLI
-        run: |
-          wget https://github.com/artifacthub/hub/releases/download/v1.19.0/ah_1.19.0_linux_amd64.tar.gz
-          tar -xzf ah_1.19.0_linux_amd64.tar.gz
-          sudo mv ah /usr/local/bin/
-          rm ah_1.19.0_linux_amd64.tar.gz
+  linter-artifacthub:
+    runs-on: ubuntu-latest
+    container:
+      image: public.ecr.aws/artifacthub/ah:v1.22.0
+      options: --user 1001
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Run ArtifactHub lint
-        run: |
-          ah lint
+      - name: Run ah lint
+        run: ah lint
