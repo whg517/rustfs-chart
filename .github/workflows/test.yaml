@@ -27,18 +27,11 @@ jobs:
         with:
           version: v3.14.0
 
-      - name: Install chart-testing
-        uses: helm/chart-testing-action@v2.6.1
-
       - name: Create kind cluster
         uses: helm/kind-action@v1.10.0
         with:
           cluster_name: chart-testing
           wait: 300s
-
-      - name: Run chart-testing install
-        run: |
-          ct install --all
 
       - name: Test Helm chart installation
         run: |
