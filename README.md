@@ -331,13 +331,12 @@ This repository uses GitHub Actions for continuous integration and deployment:
 - **Lint** (`.github/workflows/lint.yaml`): Validates chart syntax and formatting
   - Runs `helm lint` to check chart structure
   - Runs `yamllint` to validate YAML formatting
-  - Runs `ct lint` (chart-testing) for comprehensive validation
   - Runs `ah lint` (ArtifactHub) to validate chart metadata
   - Triggered on: Pull requests and pushes to main branch
 
 - **Test** (`.github/workflows/test.yaml`): Tests chart installation in a Kubernetes cluster
   - Creates a kind (Kubernetes in Docker) cluster
-  - Installs the chart using `ct install` and `helm install`
+  - Installs the chart using `helm install`
   - Runs Helm tests to verify deployment
   - Triggered on: Pull requests and pushes to main branch
 

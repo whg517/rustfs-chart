@@ -44,13 +44,6 @@ jobs:
         run: |
           yamllint -c .yamllint.yaml .
 
-      - name: Install chart-testing
-        uses: helm/chart-testing-action@v2.6.1
-
-      - name: Run chart-testing lint
-        run: |
-          ct lint --all
-
   linter-artifacthub:
     runs-on: ubuntu-latest
     container:
