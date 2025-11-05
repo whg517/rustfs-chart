@@ -50,3 +50,14 @@ jobs:
       - name: Run chart-testing lint
         run: |
           ct lint --all
+
+      - name: Install ArtifactHub CLI
+        run: |
+          wget https://github.com/artifacthub/hub/releases/download/v1.19.0/ah_1.19.0_linux_amd64.tar.gz
+          tar -xzf ah_1.19.0_linux_amd64.tar.gz
+          sudo mv ah /usr/local/bin/
+          rm ah_1.19.0_linux_amd64.tar.gz
+
+      - name: Run ArtifactHub lint
+        run: |
+          ah lint
