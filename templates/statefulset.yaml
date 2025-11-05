@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "rustfs.fullname" . }}
+  labels:
+    {{- include "rustfs.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "rustfs.fullname" . }}
+  replicas: {{ .Values.replicas | default 1 }}
+  {{- if .Values.statefulSetUpdate }}
+  updateStrategy:
+    {{- toYaml .Values.statefulSetUpdate | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "rustfs.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "rustfs.podLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "rustfs.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if eq (include "rustfs.standalone" .) "false" }}
+          args:
+            - "rustfs"
+            - {{ include "rustfs.volumesPattern" . | quote }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ include "rustfs.apiPort" . }}
+              protocol: TCP
+            - name: console
+              containerPort: {{ include "rustfs.consolePort" . }}
+              protocol: TCP
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "rustfs.environment" . | nindent 12 }}
+          envFrom:
+            {{- if .Values.config.enabled }}
+            - configMapRef:
+                name: {{ include "rustfs.configMapName" . }}
+            {{- end }}
+            {{- with .Values.envFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            {{- if eq (include "rustfs.standalone" .) "false" }}
+            {{- range $i := until (int (.Values.driverPerNode | default 1)) }}
+            - name: data-{{ $i }}
+              mountPath: {{ $.Values.mountPath }}/rustfs{{ $i }}
+            {{- end }}
+            {{- else }}
+            - name: data-0
+              mountPath: {{ .Values.mountPath }}
+            {{- end }}
+            {{- end }}
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+  {{- range $i := until (int (.Values.driverPerNode | default 1)) }}
+  - metadata:
+      name: data-{{ $i }}
+      {{- with $.Values.persistence.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      accessModes:
+        {{- toYaml $.Values.persistence.accessModes | nindent 8 }}
+      {{- if $.Values.persistence.storageClass }}
+      {{- if (eq "-" $.Values.persistence.storageClass) }}
+      storageClassName: ""
+      {{- else }}
+      storageClassName: {{ $.Values.persistence.storageClass | quote }}
+      {{- end }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ $.Values.persistence.size | quote }}
+  {{- end }}
+  {{- end }}

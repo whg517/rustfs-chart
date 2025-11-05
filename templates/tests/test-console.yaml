@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "rustfs.fullname" . }}-test-console"
+  labels:
+    {{- include "rustfs.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: test-console
+      image: curlimages/curl
+      command: ['curl']
+      args: ['-f', 'http://{{ include "rustfs.consoleServiceName" . }}:{{ include "rustfs.consolePort" . }}']
+  restartPolicy: Never

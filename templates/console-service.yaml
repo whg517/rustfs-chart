@@ -1,0 +1,22 @@
+{{- if .Values.consoleService }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rustfs.consoleServiceName" . }}
+  labels:
+    {{- include "rustfs.labels" . | nindent 4 }}
+    app.kubernetes.io/component: console
+  {{- with .Values.consoleService.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.consoleService.type }}
+  ports:
+    - port: {{ include "rustfs.consolePort" . }}
+      targetPort: console
+      protocol: TCP
+      name: console
+  selector:
+    {{- include "rustfs.selectorLabels" . | nindent 4 }}
+{{- end }}

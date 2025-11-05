@@ -1,0 +1,519 @@
+# Default values for RustFS Helm Chart
+# RustFS is a high-performance, S3-compatible object storage server written in Rust
+# This chart deploys RustFS in Kubernetes with support for both standalone and distributed modes
+
+#################################################################################
+# Global Configuration
+#################################################################################
+
+#################################################################################
+# Container Image Configuration
+#################################################################################
+
+# RustFS container image configuration
+image:
+  # Docker image repository for RustFS
+  repository: rustfs/rustfs
+  # Image pull policy: Always, IfNotPresent, or Never
+  pullPolicy: IfNotPresent
+  # Image tag to use (overrides the chart appVersion)
+  # Use specific version tags in production instead of "latest"
+  tag: "latest"
+
+# Secrets for pulling images from private repositories
+# More information: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+imagePullSecrets: []
+
+#################################################################################
+# Naming and Network Configuration
+#################################################################################
+
+# Override the default chart name (defaults to Chart.Name)
+nameOverride: ""
+# Override the full resource name (defaults to Release.Name-Chart.Name)
+fullnameOverride: ""
+# Kubernetes cluster domain for service discovery
+clusterDomain: "cluster.local"
+
+#################################################################################
+# Security and Authentication Configuration
+#################################################################################
+
+# RustFS Admin Credentials for S3 API and Management Console access
+# SECURITY WARNING: Please change these values for production deployments
+# These credentials will be used to access both the S3 API and web console
+# rootUser corresponds to RUSTFS_ACCESS_KEY environment variable
+# rootPassword corresponds to RUSTFS_SECRET_KEY environment variable
+# Leave empty to run RustFS without authentication (development/testing only)
+rootUser: ""
+rootPassword: ""
+
+#################################################################################
+# Storage and Volume Configuration
+#################################################################################
+
+# Path where Persistent Volumes will be mounted inside the container
+# This is the base path for all RustFS data storage
+mountPath: "/data"
+
+#################################################################################
+# Deployment Mode Configuration
+#################################################################################
+
+# Number of storage drives per RustFS node
+# This determines how many PVCs each pod will mount for data storage
+# - Single drive (1): Suitable for development/testing environments
+# - Multiple drives (2+): Recommended for production for better performance and redundancy
+driverPerNode: 1
+
+# Number of RustFS node replicas in the StatefulSet
+# This determines the total number of RustFS server instances
+# - Single replica (1): Standalone mode - simple deployment for testing
+# - Multiple replicas (2+): Distributed mode - provides high availability and scalability
+#
+# Deployment modes:
+# - Standalone: replicas=1 AND driverPerNode=1
+# - Distributed: replicas>1 OR driverPerNode>1
+#
+# Default is standalone mode for easy testing and development
+# For production environments, it's recommended to have:
+# - Multiple replicas for high availability and load balancing
+# - Multiple drivers per node for better I/O performance
+# Reference: https://docs.rustfs.com/installation/distributed-setup
+replicas: 1
+
+# Persistent storage configuration for RustFS data
+persistence:
+  # Enable persistent volume claims for data storage
+  # Disable only for testing environments where data persistence is not required
+  enabled: true
+  # Annotations to add to PVC resources
+  annotations: {}
+  # Use an existing PVC instead of creating new ones
+  # If specified, storageClass, accessModes, and size are ignored
+  existingClaim: ""
+  # Storage class for dynamic volume provisioning
+  # Leave empty to use the default storage class
+  # Examples: "fast-ssd", "standard", "local-path"
+  storageClass: ""
+  # Access modes for the persistent volume claim
+  # RustFS requires ReadWriteOnce for each pod's storage
+  accessModes:
+    - ReadWriteOnce
+  # Size of each persistent volume claim
+  # This size applies to each drive (driverPerNode * replicas total volumes)
+  # Consider your data requirements and available cluster storage
+  size: 10Gi
+
+
+# Use an existing Kubernetes Secret for RustFS credentials
+# When specified, rootUser and rootPassword values are ignored
+# The secret must contain the following keys:
+# - RUSTFS_ACCESS_KEY: S3 API access key
+# - RUSTFS_SECRET_KEY: S3 API secret key
+# More information: https://kubernetes.io/docs/concepts/configuration/secret/
+existingSecret: ""
+
+#################################################################################
+# RustFS Application Configuration
+#################################################################################
+
+# RustFS runtime configuration via ConfigMap
+config:
+  # Enable ConfigMap creation for RustFS environment variables
+  # Set to false if you want to manage configuration externally
+  enabled: true
+
+  # Network port configuration
+  # S3 API server port (for object storage operations)
+  apiPort: 9000
+  # Management console web UI port
+  consolePort: 9001
+
+  # Network address binding (advanced configuration)
+  # Server address for S3 API binding (default: :apiPort)
+  # Format: "host:port" or ":port" for all interfaces
+  address: ""
+  # Console address for web UI binding (default: :consolePort)
+  consoleAddress: ""
+
+  # Console interface settings
+  # Enable the web-based management console
+  consoleEnable: true
+
+  # Cross-Origin Resource Sharing (CORS) configuration
+  # Allowed origins for S3 API requests (comma-separated)
+  # Example: "https://myapp.com,https://anotherapp.com"
+  corsAllowedOrigins: ""
+  # Allowed origins for console web UI (comma-separated)
+  consoleCorsAllowedOrigins: ""
+
+  # Logging configuration
+  # Log level for RustFS server (trace, debug, info, warn, error)
+  # Use "debug" or "trace" for troubleshooting, "info" for production
+  logLevel: "info"
+
+  # Additional custom configuration key-value pairs
+  # These will be added as environment variables to the RustFS container
+  extraConfig: {}
+  # Example:
+  # extraConfig:
+  #   RUSTFS_BROWSER_ENABLED: "true"
+  #   RUSTFS_COMPRESSION: "on"
+
+#################################################################################
+# Environment Variables Configuration
+#################################################################################
+
+# Additional environment variables for RustFS container
+# These are applied directly to the container spec
+env: {}
+  # Examples:
+  # - name: CUSTOM_ENV_VAR
+  #   value: "custom_value"
+  # - name: SECRET_ENV_VAR
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: my-secret
+  #       key: secret-key
+
+# Environment variables from ConfigMaps and Secrets
+# The RustFS ConfigMap (if config.enabled=true) is automatically included
+envFrom: []
+  # Examples:
+  # - secretRef:
+  #     name: additional-secrets
+  # - configMapRef:
+  #     name: additional-config
+
+#################################################################################
+# StatefulSet Update Configuration
+#################################################################################
+
+# StatefulSet update strategy configuration
+statefulSetUpdate:
+  # Update strategy for StatefulSet (RollingUpdate or OnDelete)
+  # RollingUpdate: Pods are updated one by one automatically
+  # OnDelete: Pods are updated only when manually deleted
+  type: RollingUpdate
+
+#################################################################################
+# Service Account Configuration
+#################################################################################
+
+# Kubernetes Service Account configuration
+# More information: https://kubernetes.io/docs/concepts/security/service-accounts/
+serviceAccount:
+  # Create a new service account for RustFS pods
+  create: true
+  # Automatically mount the service account API credentials
+  # Set to false if RustFS doesn't need Kubernetes API access
+  automount: true
+  # Annotations to add to the service account
+  # Useful for IAM role assignments in cloud environments
+  annotations: {}
+  # Custom name for the service account
+  # If empty and create=true, a name is generated using the fullname template
+  name: ""
+
+#################################################################################
+# Pod Configuration
+#################################################################################
+
+# Annotations to add to RustFS pods
+# More information: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+podAnnotations: {}
+  # Examples:
+  # prometheus.io/scrape: "true"
+  # prometheus.io/port: "9000"
+
+# Labels to add to RustFS pods
+# More information: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: {}
+  # Examples:
+  # environment: production
+  # component: storage
+
+#################################################################################
+# Security Configuration
+#################################################################################
+
+# Pod-level security context
+# Applied to the entire pod (affects all containers and volumes)
+podSecurityContext:
+  # File system group for volume permissions
+  # This ensures that mounted volumes have the correct group ownership
+  fsGroup: 1000
+  # Examples for additional pod-level security:
+  # supplementalGroups: [1000]
+  # runAsGroup: 1000
+
+# Container-level security context
+# Applied to the RustFS container specifically
+# These settings provide security hardening for production deployments
+securityContext:
+  # Drop all Linux capabilities for security
+  capabilities:
+    drop:
+    - ALL
+  # Make the root filesystem read-only (RustFS writes only to mounted volumes)
+  readOnlyRootFilesystem: true
+  # Run as non-root user for security
+  runAsNonRoot: true
+  # UID for the RustFS process
+  runAsUser: 1000
+  # GID for the RustFS process
+  runAsGroup: 1000
+
+#################################################################################
+# Service Configuration
+#################################################################################
+
+# Kubernetes Service for RustFS S3 API
+service:
+  # Service type for S3 API access
+  # - ClusterIP: Internal cluster access only
+  # - NodePort: Expose on each node's IP at a static port
+  # - LoadBalancer: Expose via cloud provider's load balancer
+  type: ClusterIP
+  # Annotations for the S3 API service
+  # Useful for cloud-specific load balancer configurations
+  annotations: {}
+    # Examples:
+    # service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    # service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+
+# Kubernetes Service for RustFS Management Console (separate from S3 API)
+consoleService:
+  # Service type for management console web UI access
+  type: ClusterIP
+  # Annotations for the console service
+  annotations: {}
+    # Examples:
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+
+#################################################################################
+# Ingress Configuration
+#################################################################################
+
+# Ingress for RustFS S3 API external access
+# More information: https://kubernetes.io/docs/concepts/services-networking/ingress/
+ingress:
+  # Enable ingress for S3 API
+  enabled: false
+  # Ingress class name (e.g., "nginx", "traefik", "alb")
+  className: ""
+  # Ingress annotations for controller-specific configuration
+  annotations: {}
+    # Examples for NGINX ingress controller:
+    # kubernetes.io/ingress.class: nginx
+    # nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    # nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  # Hostnames and paths for S3 API access
+  hosts:
+    - host: rustfs-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  # TLS configuration for HTTPS
+  tls: []
+  #  - secretName: rustfs-api-tls
+  #    hosts:
+  #      - rustfs-example.local
+
+# Ingress for RustFS Management Console external access
+consoleIngress:
+  # Enable ingress for management console
+  enabled: false
+  # Ingress class name
+  className: ""
+  # Ingress annotations for console-specific configuration
+  annotations: {}
+    # Examples:
+    # kubernetes.io/ingress.class: nginx
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # nginx.ingress.kubernetes.io/auth-basic: "Authentication Required"
+  # Hostnames and paths for console access
+  hosts:
+    - host: rustfs-console-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  # TLS configuration for console HTTPS
+  tls: []
+  #  - secretName: rustfs-console-tls
+  #    hosts:
+  #      - rustfs-console-example.local
+
+
+# -- Expose the service via gateway-api HTTPRoute
+# Requires Gateway API resources and suitable controller installed within the cluster
+# (see: https://gateway-api.sigs.k8s.io/guides/)
+httpRoute:
+  # HTTPRoute enabled.
+  enabled: false
+  # HTTPRoute annotations.
+  annotations: {}
+  # Which Gateways this Route is attached to.
+  parentRefs:
+  - name: gateway
+    sectionName: http
+    # namespace: default
+  # Hostnames matching HTTP header.
+  hostnames:
+  - chart-example.local
+  # List of rules and filters applied.
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /headers
+  #   filters:
+  #   - type: RequestHeaderModifier
+  #     requestHeaderModifier:
+  #       set:
+  #       - name: My-Overwrite-Header
+  #         value: this-is-the-only-value
+  #       remove:
+  #       - User-Agent
+  # - matches:
+  #   - path:
+  #       type: PathPrefix
+  #       value: /echo
+  #     headers:
+  #     - name: version
+  #       value: v2
+
+#################################################################################
+# Resource Management
+#################################################################################
+
+# CPU and memory resource allocation for RustFS containers
+# Adjust these values based on your workload requirements and cluster capacity
+resources:
+  # Resource limits (maximum resources the container can use)
+  # Prevents resource starvation of other pods on the same node
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  # Resource requests (guaranteed resources for the container)
+  # Used by Kubernetes scheduler for pod placement decisions
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  # Production recommendations:
+  # - For high-throughput workloads, increase CPU limits (e.g., 1000m-2000m)
+  # - For large datasets, increase memory limits (e.g., 1Gi-4Gi)
+  # - Always set requests to ensure QoS and predictable performance
+
+#################################################################################
+# Health Check Configuration
+#################################################################################
+
+# Liveness probe configuration - determines if container is healthy and should be restarted
+livenessProbe:
+  httpGet:
+    # Health check endpoint provided by RustFS
+    path: /health
+    port: http
+  # Wait time before starting liveness checks (allows for startup)
+  initialDelaySeconds: 30
+  # How often to perform the probe
+  periodSeconds: 10
+  # Timeout for each probe request
+  timeoutSeconds: 5
+  # Number of failures before restarting the container
+  failureThreshold: 3
+
+# Readiness probe configuration - determines if container is ready to serve traffic
+readinessProbe:
+  httpGet:
+    # Same health endpoint but with different timing for readiness
+    path: /health
+    port: http
+  # Shorter delay for readiness (can serve traffic sooner)
+  initialDelaySeconds: 5
+  # More frequent checks for readiness
+  periodSeconds: 5
+  # Faster timeout for readiness
+  timeoutSeconds: 1
+  # Number of failures before removing from service endpoints
+  failureThreshold: 3
+
+#################################################################################
+# Additional Volumes and Mounts
+#################################################################################
+
+# Additional volumes to add to the RustFS pods
+# These are in addition to the data volumes created by persistence configuration
+volumes: []
+# Examples:
+# - name: config-volume
+#   configMap:
+#     name: rustfs-config
+# - name: secret-volume
+#   secret:
+#     secretName: rustfs-secrets
+#     optional: false
+
+# Additional volume mounts for the RustFS container
+# These correspond to the volumes defined above
+volumeMounts: []
+# Examples:
+# - name: config-volume
+#   mountPath: "/etc/rustfs/config"
+#   readOnly: true
+# - name: secret-volume
+#   mountPath: "/etc/rustfs/secrets"
+#   readOnly: true
+
+#################################################################################
+# Pod Scheduling Configuration
+#################################################################################
+
+# Node selector for pod assignment
+# Schedule pods only on nodes with specific labels
+nodeSelector: {}
+# Examples:
+# storage: ssd
+# zone: us-west-1a
+
+# Tolerations for pod scheduling
+# Allow pods to be scheduled on nodes with matching taints
+tolerations: []
+# Examples:
+# - key: "storage"
+#   operator: "Equal"
+#   value: "dedicated"
+#   effect: "NoSchedule"
+
+# Pod affinity and anti-affinity rules
+# Control pod placement relative to other pods or nodes
+# Default: Enable pod anti-affinity to spread RustFS pods across different nodes
+affinity:
+  podAntiAffinity:
+    # Prefer to schedule pods on different nodes (soft constraint)
+    # This allows scheduling even if no other nodes are available
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - rustfs
+        # Spread across different physical nodes
+        topologyKey: kubernetes.io/hostname
+    # Uncomment below for strict anti-affinity (hard constraint)
+    # This prevents scheduling if no other nodes are available
+    # requiredDuringSchedulingIgnoredDuringExecution:
+    # - labelSelector:
+    #     matchExpressions:
+    #     - key: app.kubernetes.io/name
+    #       operator: In
+    #       values:
+    #       - rustfs
+    #   topologyKey: kubernetes.io/hostname
