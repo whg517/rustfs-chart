@@ -38,7 +38,7 @@ jobs:
 
       - name: Run chart-testing install
         run: |
-          ct install --charts . --chart-dirs . --all
+          ct install --all
 
       - name: Test Helm chart installation
         run: |

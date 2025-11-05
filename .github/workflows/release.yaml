@@ -45,8 +45,12 @@ jobs:
 
       - name: Push chart to OCI registry
         run: |
-          CHART_PACKAGE=$(ls rustfs-*.tgz)
-          helm push ${CHART_PACKAGE} oci://ghcr.io/${{ github.repository_owner }}
+          CHART_PACKAGE=$(find . -maxdepth 1 -name 'rustfs-*.tgz' -type f | head -1)
+          if [ -z "$CHART_PACKAGE" ]; then
+            echo "Error: No chart package found"
+            exit 1
+          fi
+          helm push "${CHART_PACKAGE}" oci://ghcr.io/${{ github.repository_owner }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
