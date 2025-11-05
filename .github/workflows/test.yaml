@@ -1,0 +1,59 @@
+name: Test
+
+on:
+  pull_request:
+    paths:
+      - 'Chart.yaml'
+      - 'values.yaml'
+      - 'templates/**'
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test-chart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Install chart-testing
+        uses: helm/chart-testing-action@v2.6.1
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: chart-testing
+          wait: 300s
+
+      - name: Run chart-testing install
+        run: |
+          ct install --all
+
+      - name: Test Helm chart installation
+        run: |
+          helm install test-rustfs . --set rootUser=testuser --set rootPassword=testpass123 --wait --timeout 5m
+
+      - name: Run Helm tests
+        run: |
+          helm test test-rustfs --timeout 5m
+
+      - name: Check deployment status
+        run: |
+          kubectl get all
+          kubectl describe statefulset test-rustfs
+
+      - name: Cleanup
+        if: always()
+        run: |
+          helm uninstall test-rustfs --wait || true

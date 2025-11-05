@@ -322,6 +322,54 @@ Test configuration without deployment:
 helm template my-rustfs ./rustfs --debug
 ```
 
+## CI/CD
+
+This repository uses GitHub Actions for continuous integration and deployment:
+
+### Workflows
+
+- **Lint** (`.github/workflows/lint.yaml`): Validates chart syntax and formatting
+  - Runs `helm lint` to check chart structure
+  - Runs `yamllint` to validate YAML formatting
+  - Runs `ct lint` (chart-testing) for comprehensive validation
+  - Runs `ah lint` (ArtifactHub) to validate chart metadata
+  - Triggered on: Pull requests and pushes to main branch
+
+- **Test** (`.github/workflows/test.yaml`): Tests chart installation in a Kubernetes cluster
+  - Creates a kind (Kubernetes in Docker) cluster
+  - Installs the chart using `ct install` and `helm install`
+  - Runs Helm tests to verify deployment
+  - Triggered on: Pull requests and pushes to main branch
+
+- **Release** (`.github/workflows/release.yaml`): Publishes the chart to OCI registry
+  - Packages the Helm chart
+  - Pushes to GitHub Container Registry (GHCR) as an OCI artifact
+  - Creates a GitHub release with the packaged chart
+  - Triggered on: Version tags (e.g., `v1.0.0`)
+
+### Releasing a New Version
+
+To release a new version of the chart:
+
+1. Update the version in `Chart.yaml` if needed
+2. Create and push a version tag:
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+3. The release workflow will automatically:
+   - Package the chart
+   - Push to `oci://ghcr.io/<owner>/rustfs`
+   - Create a GitHub release
+
+### Installing from OCI Registry
+
+After a release, you can install the chart from GHCR:
+
+```bash
+helm install my-rustfs oci://ghcr.io/whg517/rustfs --version 0.1.0
+```
+
 ## Support
 
 For issues with this Helm chart, please check:
