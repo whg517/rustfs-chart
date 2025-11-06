@@ -291,29 +291,27 @@ podLabels: {}
 # Pod-level security context
 # Applied to the entire pod (affects all containers and volumes)
 podSecurityContext:
+  enabled: true
   # File system group for volume permissions
   # This ensures that mounted volumes have the correct group ownership
   fsGroup: 1000
-  # Examples for additional pod-level security:
-  # supplementalGroups: [1000]
-  # runAsGroup: 1000
-
-# Container-level security context
-# Applied to the RustFS container specifically
-# These settings provide security hardening for production deployments
-securityContext:
-  # Drop all Linux capabilities for security
-  capabilities:
-    drop:
-    - ALL
-  # Make the root filesystem read-only (RustFS writes only to mounted volumes)
-  readOnlyRootFilesystem: true
   # Run as non-root user for security
   runAsNonRoot: true
   # UID for the RustFS process
   runAsUser: 1000
   # GID for the RustFS process
   runAsGroup: 1000
+
+# Container-level security context
+# Applied to the RustFS container specifically
+# These settings provide security hardening for production deployments
+securityContext:
+  # Disable read-only root filesystem to allow RustFS to write to necessary directories(eg. /tmp)
+  readOnlyRootFilesystem: false
+  # Drop all Linux capabilities for security
+  capabilities:
+    drop:
+    - ALL
 
 #################################################################################
 # Service Configuration

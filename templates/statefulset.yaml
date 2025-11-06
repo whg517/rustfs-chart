@@ -37,15 +37,15 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "rustfs.serviceAccountName" . }}
-      {{- with .Values.podSecurityContext }}
+      {{- if and .Values.podSecurityContext .Values.podSecurityContext.enabled }}
       securityContext:
-        {{- toYaml . | nindent 8 }}
+        {{- omit .Values.podSecurityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          {{- with .Values.securityContext }}
+          {{- if and .Values.podSecurityContext .Values.podSecurityContext.enabled .Values.securityContext }}
           securityContext:
-            {{- toYaml . | nindent 12 }}
+            {{- toYaml .Values.securityContext | nindent 12 }}
           {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
