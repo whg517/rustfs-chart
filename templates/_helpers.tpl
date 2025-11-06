@@ -205,10 +205,10 @@ Examples:
 {{- /* Multi-node: Use distributed URL pattern */ -}}
 {{- if eq ($driverPerNode | int) 1 -}}
 {{- /* Multi-node, single drive per node */ -}}
-http://{{ $fullname }}-{0...{{ sub ($replicas | int) 1 }}}.{{ $fullname }}:{{ $apiPort }}{{ $mountPath }}/rustfs0
+http://{{ $fullname }}-{0...{{ sub ($replicas | int) 1 }}}.{{ $fullname }}.svc:{{ $apiPort }}{{ $mountPath }}/rustfs0
 {{- else -}}
 {{- /* Multi-node, multiple drives per node */ -}}
-http://{{ $fullname }}-{0...{{ sub ($replicas | int) 1 }}}.{{ $fullname }}:{{ $apiPort }}{{ $mountPath }}/rustfs{0...{{ sub ($driverPerNode | int) 1 }}}
+http://{{ $fullname }}-{0...{{ sub ($replicas | int) 1 }}}.{{ $fullname }}.svc:{{ $apiPort }}{{ $mountPath }}/rustfs{0...{{ sub ($driverPerNode | int) 1 }}}
 {{- end -}}
 {{- end -}}
 {{- end }}
