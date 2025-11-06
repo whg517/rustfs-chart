@@ -31,7 +31,7 @@ metadata:
     {{- include "rustfs.labels" . | nindent 4 }}
     app.kubernetes.io/component: headless
 spec:
-  type: ClusterIP
+  publishNotReadyAddresses: true
   clusterIP: None
   ports:
     - port: {{ include "rustfs.apiPort" . }}

@@ -15,6 +15,7 @@ spec:
   updateStrategy:
     {{- toYaml .Values.statefulSetUpdate | nindent 4 }}
   {{- end }}
+  podManagementPolicy: "Parallel"
   selector:
     matchLabels:
       {{- include "rustfs.selectorLabels" . | nindent 6 }}
