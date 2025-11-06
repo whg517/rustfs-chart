@@ -54,3 +54,14 @@
    Drives per Node: {{ $driverPerNode }}
    Volume Pattern: {{ include "rustfs.volumesPattern" . }}
 {{- end }}
+
+3. Configuration Management:
+{{- if .Values.config.restartOnConfigChange }}
+   ✅ Automatic Restart: Enabled
+      Pods will automatically restart when configuration changes are detected.
+      This ensures configuration consistency between ConfigMap and running pods.
+{{- else }}
+   ⚠️  Automatic Restart: Disabled
+      Configuration changes require manual pod restart to take effect.
+      Use 'kubectl rollout restart statefulset/{{ include "rustfs.fullname" . }}' after config changes.
+{{- end }}

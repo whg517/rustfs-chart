@@ -53,8 +53,15 @@ rootPassword: ""
 #################################################################################
 
 # Path where Persistent Volumes will be mounted inside the container
-# This is the base path for all RustFS data storage
-mountPath: "/data"
+# This is the base path for all RustFS drive data storage
+# Note:
+#   By default, RustFS configures `/data` as the data storage path. However, when deploying through a chart,
+#   this directory is not used. This is because the `0750` permission has already been set for this directory
+#   by the root user during image building.
+#   When the pod runs as a non-root user, it will result in the inability to access this directory.
+#   Therefore, the chart uses `/export` as the data storage path and overrides the default path configuration
+#   of RustFS through environment variables when the container starts.
+mountPath: "/export"
 
 #################################################################################
 # Deployment Mode Configuration
@@ -160,6 +167,12 @@ config:
   # extraConfig:
   #   RUSTFS_BROWSER_ENABLED: "true"
   #   RUSTFS_COMPRESSION: "on"
+
+  # Configuration restart behavior
+  # When enabled, pods will automatically restart when ConfigMap values change
+  # This ensures configuration consistency between ConfigMap and running pods
+  # Set to false if you prefer manual pod restarts for configuration changes
+  restartOnConfigChange: true
 
 #################################################################################
 # Environment Variables Configuration

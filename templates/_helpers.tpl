@@ -141,6 +141,30 @@ ConfigMap name
 {{- end }}
 
 {{/*
+Generate ConfigMap checksum for pod restart on config changes
+This creates a hash of the ConfigMap content that will change when configuration values change,
+causing the pod template to be updated and triggering a rolling restart.
+*/}}
+{{- define "rustfs.configChecksum" -}}
+{{- $config := dict -}}
+{{- $_ := set $config "RUSTFS_ADDRESS" (.Values.config.address | default (printf ":%d" (include "rustfs.apiPort" . | int))) -}}
+{{- $_ := set $config "RUSTFS_CONSOLE_ADDRESS" (.Values.config.consoleAddress | default (printf ":%d" (include "rustfs.consolePort" . | int))) -}}
+{{- $_ := set $config "RUSTFS_CONSOLE_ENABLE" (.Values.config.consoleEnable | default "true" | toString) -}}
+{{- if .Values.config.corsAllowedOrigins -}}
+{{- $_ := set $config "RUSTFS_CORS_ALLOWED_ORIGINS" .Values.config.corsAllowedOrigins -}}
+{{- end -}}
+{{- if .Values.config.consoleCorsAllowedOrigins -}}
+{{- $_ := set $config "RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS" .Values.config.consoleCorsAllowedOrigins -}}
+{{- end -}}
+{{- $_ := set $config "RUSTFS_LOG_LEVEL" (.Values.config.logLevel | default "info") -}}
+{{- $_ := set $config "RUSTFS_VOLUMES" (include "rustfs.volumesPattern" .) -}}
+{{- if .Values.config.extraConfig -}}
+{{- $config = merge $config .Values.config.extraConfig -}}
+{{- end -}}
+{{- $config | toYaml | sha256sum | trunc 8 -}}
+{{- end }}
+
+{{/*
 Generate RUSTFS volumes configuration
 For single-node (replicas=1): Always returns "/data/rustfs0" (local path)
 For multi-node (replicas>1): Returns distributed URL pattern with {expansion} syntax
