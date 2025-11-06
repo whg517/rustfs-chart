@@ -112,6 +112,30 @@ persistence:
   # Consider your data requirements and available cluster storage
   size: 10Gi
 
+# Persistent storage configuration for RustFS logs
+logPersistence:
+  # Enable persistent volume claims for log storage
+  # When enabled, RustFS logs will be stored in a persistent volume
+  # This allows log retention across pod restarts and provides better log management
+  enabled: true
+  # Annotations to add to log PVC resources
+  annotations: {}
+  # Use an existing PVC for log storage instead of creating a new one
+  # If specified, storageClass, accessModes, and size are ignored
+  existingClaim: ""
+  # Storage class for log volume provisioning
+  # Leave empty to use the default storage class
+  # Examples: "fast-ssd", "standard", "local-path"
+  storageClass: ""
+  # Access modes for the log persistent volume claim
+  # RustFS log storage requires ReadWriteOnce access
+  accessModes:
+    - ReadWriteOnce
+  # Size of the log persistent volume claim
+  # Consider your log retention requirements and log volume
+  # Recommended: 5-20Gi depending on log level and retention period
+  size: 5Gi
+
 
 # Use an existing Kubernetes Secret for RustFS credentials
 # When specified, rootUser and rootPassword values are ignored
@@ -140,25 +164,38 @@ config:
   # Network address binding (advanced configuration)
   # Server address for S3 API binding (default: :apiPort)
   # Format: "host:port" or ":port" for all interfaces
+  # Environment variable: RUSTFS_ADDRESS
   address: ""
   # Console address for web UI binding (default: :consolePort)
+  # Environment variable: RUSTFS_CONSOLE_ADDRESS
   consoleAddress: ""
 
   # Console interface settings
   # Enable the web-based management console
+  # Environment variable: RUSTFS_CONSOLE_ENABLE
   consoleEnable: true
 
   # Cross-Origin Resource Sharing (CORS) configuration
   # Allowed origins for S3 API requests (comma-separated)
   # Example: "https://myapp.com,https://anotherapp.com"
+  # Environment variable: RUSTFS_CORS_ALLOWED_ORIGINS
   corsAllowedOrigins: ""
   # Allowed origins for console web UI (comma-separated)
+  # Environment variable: RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS
   consoleCorsAllowedOrigins: ""
 
   # Logging configuration
   # Log level for RustFS server (trace, debug, info, warn, error)
   # Use "debug" or "trace" for troubleshooting, "info" for production
+  # Environment variable: RUSTFS_LOG_LEVEL
   logLevel: "info"
+  # Maximum log file size
+  # Environment variable: RUSTFS_OBS_LOG_ROTATION_SIZE_MB
+  logRotationMaxMBSize: 100Mi
+  # Maximum number of log files to keep, default is 2 in chart deploy.
+  # Default value is 30 in RustFS container.
+  # Environment variable: RUSTFS_OBS_LOG_KEEP_FILES
+  logMaxCount: 2
 
   # Additional custom configuration key-value pairs
   # These will be added as environment variables to the RustFS container

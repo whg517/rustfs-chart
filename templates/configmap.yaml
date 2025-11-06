@@ -16,6 +16,9 @@ data:
   RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS: {{ .Values.config.consoleCorsAllowedOrigins | quote }}
   {{- end }}
   RUSTFS_LOG_LEVEL: {{ .Values.config.logLevel | default "info" | quote }}
+  RUSTFS_OBS_LOG_DIRECTORY: {{ include "rustfs.logDirectory" . | quote }}
+  RUSTFS_OBS_LOG_ROTATION_SIZE_MB: {{ .Values.config.logRotationMaxMBSize | default "100Mi" | quote }}
+  RUSTFS_OBS_LOG_KEEP_FILES: {{ .Values.config.logMaxCount | default 2 | quote }}
   RUSTFS_VOLUMES: {{ include "rustfs.volumesPattern" . | quote }}
   {{- if .Values.config.extraConfig }}
   {{- toYaml .Values.config.extraConfig | nindent 2 }}

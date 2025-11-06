@@ -141,6 +141,14 @@ ConfigMap name
 {{- end }}
 
 {{/*
+RustFS log directory path
+Returns the directory path where RustFS logs will be stored
+*/}}
+{{- define "rustfs.logDirectory" -}}
+/var/log/rustfs
+{{- end }}
+
+{{/*
 Generate ConfigMap checksum for pod restart on config changes
 This creates a hash of the ConfigMap content that will change when configuration values change,
 causing the pod template to be updated and triggering a rolling restart.
@@ -157,6 +165,9 @@ causing the pod template to be updated and triggering a rolling restart.
 {{- $_ := set $config "RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS" .Values.config.consoleCorsAllowedOrigins -}}
 {{- end -}}
 {{- $_ := set $config "RUSTFS_LOG_LEVEL" (.Values.config.logLevel | default "info") -}}
+{{- $_ := set $config "RUSTFS_OBS_LOG_DIRECTORY" (include "rustfs.logDirectory" .) -}}
+{{- $_ := set $config "RUSTFS_OBS_LOG_ROTATION_SIZE_MB" (.Values.config.logRotationMaxMBSize | default "100Mi") -}}
+{{- $_ := set $config "RUSTFS_OBS_LOG_KEEP_FILES" (.Values.config.logMaxCount | default 2 | toString) -}}
 {{- $_ := set $config "RUSTFS_VOLUMES" (include "rustfs.volumesPattern" .) -}}
 {{- if .Values.config.extraConfig -}}
 {{- $config = merge $config .Values.config.extraConfig -}}
