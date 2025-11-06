@@ -5,7 +5,11 @@ metadata:
   labels:
     {{- include "rustfs.labels" . | nindent 4 }}
 spec:
+  {{- if gt (.Values.replicas | int) 1 }}
+  serviceName: {{ include "rustfs.headlessServiceName" . }}
+  {{- else }}
   serviceName: {{ include "rustfs.fullname" . }}
+  {{- end }}
   replicas: {{ .Values.replicas | default 1 }}
   {{- if .Values.statefulSetUpdate }}
   updateStrategy:

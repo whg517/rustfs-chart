@@ -1,9 +1,11 @@
+# Regular Service for external access
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "rustfs.fullname" . }}
   labels:
     {{- include "rustfs.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
   {{- with .Values.service.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -17,3 +19,25 @@ spec:
       name: http
   selector:
     {{- include "rustfs.selectorLabels" . | nindent 4 }}
+{{- if gt (.Values.replicas | int) 1 }}
+---
+# Headless service for StatefulSet pod discovery and inter-pod communication
+# Only created for distributed deployments (replicas > 1)
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rustfs.headlessServiceName" . }}
+  labels:
+    {{- include "rustfs.labels" . | nindent 4 }}
+    app.kubernetes.io/component: headless
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - port: {{ include "rustfs.apiPort" . }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "rustfs.selectorLabels" . | nindent 4 }}
+{{- end }}

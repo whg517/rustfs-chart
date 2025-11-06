@@ -80,6 +80,13 @@ Console service name
 {{- end }}
 
 {{/*
+Headless service name for StatefulSet pod discovery
+*/}}
+{{- define "rustfs.headlessServiceName" -}}
+{{- printf "%s-headless" (include "rustfs.fullname" .) }}
+{{- end }}
+
+{{/*
 API Port
 */}}
 {{- define "rustfs.apiPort" -}}
@@ -172,7 +179,7 @@ causing the pod template to be updated and triggering a rolling restart.
 {{- if .Values.config.extraConfig -}}
 {{- $config = merge $config .Values.config.extraConfig -}}
 {{- end -}}
-{{- $config | toYaml | sha256sum | trunc 8 -}}
+{{- $config | toYaml | sha256sum | trunc 8 | quote -}}
 {{- end }}
 
 {{/*
@@ -202,13 +209,14 @@ Examples:
 {{- if eq ($replicas | int) 1 -}}
 {{ $mountPath }}/rustfs0
 {{- else -}}
-{{- /* Multi-node: Use distributed URL pattern */ -}}
+{{- /* Multi-node: Use distributed URL pattern with headless service */ -}}
+{{- $headlessService := include "rustfs.headlessServiceName" . -}}
 {{- if eq ($driverPerNode | int) 1 -}}
 {{- /* Multi-node, single drive per node */ -}}
-http://{{ $fullname }}-{0...{{ sub ($replicas | int) 1 }}}.{{ $fullname }}.svc:{{ $apiPort }}{{ $mountPath }}/rustfs0
+http://{{ $fullname }}-{0...{{ sub ($replicas | int) 1 }}}.{{ $headlessService }}:{{ $apiPort }}{{ $mountPath }}/rustfs0
 {{- else -}}
 {{- /* Multi-node, multiple drives per node */ -}}
-http://{{ $fullname }}-{0...{{ sub ($replicas | int) 1 }}}.{{ $fullname }}.svc:{{ $apiPort }}{{ $mountPath }}/rustfs{0...{{ sub ($driverPerNode | int) 1 }}}
+http://{{ $fullname }}-{0...{{ sub ($replicas | int) 1 }}}.{{ $headlessService }}:{{ $apiPort }}{{ $mountPath }}/rustfs{0...{{ sub ($driverPerNode | int) 1 }}}
 {{- end -}}
 {{- end -}}
 {{- end }}
