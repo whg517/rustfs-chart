@@ -33,3 +33,24 @@
   echo "Visit http://127.0.0.1:8080 to use your application"
   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
 {{- end }}
+
+2. RustFS Configuration Information:
+{{- $replicas := .Values.replicas }}
+{{- $driverPerNode := .Values.driverPerNode }}
+{{- if eq ($replicas | int) 1 }}
+   Deployment Mode: Standalone (Single-node)
+   Replicas: {{ $replicas }}
+   Drives per Node: {{ $driverPerNode }}
+   {{- if gt ($driverPerNode | int) 1 }}
+
+   ⚠️  NOTE: In single-node mode, only the first drive (/data/rustfs0) is used for storage.
+       Multiple drives are configured but RustFS will only utilize the first one due to
+       erasure coding constraints in standalone deployments. The additional PVCs are
+       created but remain unused in single-node configurations.
+   {{- end }}
+{{- else }}
+   Deployment Mode: Distributed (Multi-node)
+   Replicas: {{ $replicas }}
+   Drives per Node: {{ $driverPerNode }}
+   Volume Pattern: {{ include "rustfs.volumesPattern" . }}
+{{- end }}

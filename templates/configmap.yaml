@@ -16,6 +16,7 @@ data:
   RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS: {{ .Values.config.consoleCorsAllowedOrigins | quote }}
   {{- end }}
   RUSTFS_LOG_LEVEL: {{ .Values.config.logLevel | default "info" | quote }}
+  RUSTFS_VOLUMES: {{ include "rustfs.volumesPattern" . | quote }}
   {{- if .Values.config.extraConfig }}
   {{- toYaml .Values.config.extraConfig | nindent 2 }}
   {{- end }}

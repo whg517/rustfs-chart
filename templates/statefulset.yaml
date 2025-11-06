@@ -40,11 +40,6 @@ spec:
           {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if eq (include "rustfs.standalone" .) "false" }}
-          args:
-            - "rustfs"
-            - {{ include "rustfs.volumesPattern" . | quote }}
-          {{- end }}
           ports:
             - name: http
               containerPort: {{ include "rustfs.apiPort" . }}
@@ -76,14 +71,9 @@ spec:
           {{- end }}
           volumeMounts:
             {{- if .Values.persistence.enabled }}
-            {{- if eq (include "rustfs.standalone" .) "false" }}
             {{- range $i := until (int (.Values.driverPerNode | default 1)) }}
             - name: data-{{ $i }}
               mountPath: {{ $.Values.mountPath }}/rustfs{{ $i }}
-            {{- end }}
-            {{- else }}
-            - name: data-0
-              mountPath: {{ .Values.mountPath }}
             {{- end }}
             {{- end }}
             {{- with .Values.volumeMounts }}

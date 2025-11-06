@@ -141,21 +141,20 @@ ConfigMap name
 {{- end }}
 
 {{/*
-Check if this is a standalone setup (single-node and single-disk)
-*/}}
-{{- define "rustfs.standalone" -}}
-{{- $replicas := .Values.replicas -}}
-{{- $driverPerNode := .Values.driverPerNode -}}
-{{- if and (eq ($replicas | int) 1) (eq ($driverPerNode | int) 1) -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end }}
+Generate RUSTFS volumes configuration
+For single-node (replicas=1): Always returns "/data/rustfs0" (local path)
+For multi-node (replicas>1): Returns distributed URL pattern with {expansion} syntax
 
-{{/*
-Generate RUSTFS volumes URL pattern for distributed setup
-Example: "http://rustfs-{0...3}.rustfs:9000/data/rustfs{0...1}"
+Logic:
+1. Single-node: Use local path "/data/rustfs0" regardless of driverPerNode
+   (Only first drive is used due to erasure coding constraints in single-node)
+2. Multi-node + single drive: "http://service-{0...N}.service:port/data/rustfs0"
+3. Multi-node + multiple drives: "http://service-{0...N}.service:port/data/rustfs{0...M}"
+
+Examples:
+- replicas=1, driverPerNode=3 → "/data/rustfs0" (single-node, only first drive used)
+- replicas=3, driverPerNode=1 → "http://rustfs-{0...2}.rustfs:9000/data/rustfs0"
+- replicas=3, driverPerNode=2 → "http://rustfs-{0...2}.rustfs:9000/data/rustfs{0...1}"
 */}}
 {{- define "rustfs.volumesPattern" -}}
 {{- $replicas := .Values.replicas -}}
@@ -163,9 +162,18 @@ Example: "http://rustfs-{0...3}.rustfs:9000/data/rustfs{0...1}"
 {{- $apiPort := include "rustfs.apiPort" . -}}
 {{- $fullname := include "rustfs.fullname" . -}}
 {{- $mountPath := .Values.mountPath | default "/data" -}}
-{{- if eq ($driverPerNode | int) 1 -}}
-http://{{ $fullname }}-{0...{{ sub ($replicas | int) 1 }}}.{{ $fullname }}:{{ $apiPort }}{{ $mountPath }}/rustfs{0...0}
+
+{{- /* Single-node: Always use local path, only first drive */ -}}
+{{- if eq ($replicas | int) 1 -}}
+{{ $mountPath }}/rustfs0
 {{- else -}}
+{{- /* Multi-node: Use distributed URL pattern */ -}}
+{{- if eq ($driverPerNode | int) 1 -}}
+{{- /* Multi-node, single drive per node */ -}}
+http://{{ $fullname }}-{0...{{ sub ($replicas | int) 1 }}}.{{ $fullname }}:{{ $apiPort }}{{ $mountPath }}/rustfs0
+{{- else -}}
+{{- /* Multi-node, multiple drives per node */ -}}
 http://{{ $fullname }}-{0...{{ sub ($replicas | int) 1 }}}.{{ $fullname }}:{{ $apiPort }}{{ $mountPath }}/rustfs{0...{{ sub ($driverPerNode | int) 1 }}}
+{{- end -}}
 {{- end -}}
 {{- end }}
